@@ -1,0 +1,227 @@
+version: "3.8"
+
+x-main-config-template: &main-config-template
+  volumes:
+    - ./:/app:delegated
+  restart: always
+  environment:
+    - DB_HOST=mariadb
+    - DB_PORT=3306
+    - DB_DATABASE=ibolit
+    - DB_USERNAME=root
+    - DB_PASSWORD=secret
+    - REDIS_HOST=redis
+    - MAIL_HOST=mail-hog
+    - MAIL_PORT=1025
+    - COMMAND_FOR_RUN=php /app/artisan schedule:run
+  networks:
+    - fpm-network
+    - redis-network
+    - mail-network
+    - db-network
+  depends_on:
+    - mariadb
+    - redis
+
+networks:
+  fpm-network:
+  redis-network:
+  db-network:
+  mail-network:
+  socket-network:
+  global-network:
+    external: true
+
+volumes:
+  mariadb-data:
+
+services:
+  traefik:
+    container_name: traefik
+    image: traefik:latest
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=global-network
+      - traefik.http.routers.api.service=api@internal
+      - traefik.http.routers.api.entrypoints=http
+      - traefik.http.routers.api.rule=Host(`traefik.localhost`)
+      - traefik.http.services.api.loadbalancer.server.port=8080
+    ports:
+      - 80:80
+      - 443:433
+      - 6060:6060
+    networks:
+      - global-network
+    volumes:
+      - ./traefik.yml:/etc/traefik/traefik.yml
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - redis
+
+  mail-hog:
+    container_name: mail-hog
+    image: mailhog/mailhog
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=global-network
+      - traefik.http.routers.mail-hog-router.rule=Host(`mail.localhost`)
+      - traefik.http.routers.mail-hog-router.entrypoints=http
+      - traefik.http.services.mail-hog-service.loadbalancer.server.port=8025
+    environment:
+      - MH_STORAGE=maildir
+    ports:
+      - 1025
+      - 8025
+    networks:
+      - mail-network
+      - global-network
+
+  redis:
+    container_name: redis
+    image: redis:5-alpine
+    ports:
+      - 6379
+    networks:
+      - redis-network
+
+  redis-commander:
+    container_name: redis-commander
+    image: rediscommander/redis-commander:latest
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=global-network
+      - traefik.http.routers.redis-router.rule=Host(`redis.localhost`)
+      - traefik.http.routers.redis-router.entrypoints=http
+      - traefik.http.services.redis-service.loadbalancer.server.port=8081
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    ports:
+      - 8081
+    networks:
+      - redis-network
+      - global-network
+    depends_on:
+      - redis
+
+  mariadb:
+    container_name: mariadb
+    image: mariadb:10.4.10
+    restart: always
+    volumes:
+      - mariadb-data:/var/lib/mysql
+    environment:
+     - MYSQL_DATABASE=ibolit
+     - MYSQL_ROOT_PASSWORD=secret
+    ports:
+      - 3306:3306
+    networks:
+      - db-network
+      - global-network
+
+  core:
+    <<: *main-config-template
+    container_name: core
+    build:
+      context: .
+      dockerfile: ./docker/core/Dockerfile
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=global-network
+      - traefik.tcp.routers.core-router.rule=HostSNI(`*`)
+      - traefik.tcp.routers.core-router.entrypoints=ssh
+      - traefik.tcp.routers.core-router.service=core-service
+      - traefik.tcp.services.core-service.loadbalancer.server.port=22
+    networks:
+      - fpm-network
+      - socket-network
+      - global-network
+      - redis-network
+
+  fpm:
+    <<: *main-config-template
+    container_name: fpm
+    build:
+      context: .
+      dockerfile: ./docker/fpm/Dockerfile
+    ports:
+      - 9000
+
+  nginx:
+    container_name: nginx
+    build:
+      context: .
+      dockerfile: ./docker/nginx/Dockerfile
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=global-network
+      - traefik.http.routers.api-router.rule=Host(`api.localhost`)
+      - traefik.http.routers.api-router.entrypoints=http
+      - traefik.http.routers.api-router.service=api-service
+      - traefik.http.services.api-service.loadbalancer.server.port=80
+    environment:
+      - APP_HOST=api.localhost
+      - FPM_PORT=9000
+      - FPM_HOST=fpm
+      - ROOT_DIR=/app/public
+    ports:
+      - 80
+    volumes:
+      - ./:/app:delegated
+      - ./storage/app/public:/app/storage/public
+    networks:
+      - fpm-network
+      - socket-network
+      - global-network
+    depends_on:
+      - fpm
+
+  cron:
+    <<: *main-config-template
+    container_name: cron
+    build:
+      context: .
+      dockerfile: ./docker/cron/Dockerfile
+
+#  socket:
+#    container_name: socket
+#    build:
+#      context: .
+#      dockerfile: ./docker/socket/Dockerfile
+#    restart: always
+#    environment:
+#      - IS_DOCKER_COMPOSE=true
+#    volumes:
+#      - ./laravel-echo-server.json:/app/laravel-echo-server.json
+#    ports:
+#      - 80
+#    labels:
+#      - traefik.enable=true
+#      - traefik.docker.network=global-network
+#      - traefik.http.routers.socket-router.rule=Host(`socket.localhost`)
+#      - traefik.http.routers.socket-router.entrypoints=http
+#      - traefik.http.routers.socket-router.service=socket-service
+#      - traefik.http.services.socket-service.loadbalancer.server.port=80
+#      - traefik.tcp.routers.socket-router.rule=HostSNI(`socket.localhost`)
+#      - traefik.tcp.routers.socket-router.entrypoints=http
+#      - traefik.tcp.routers.socket-router.service=socket-service
+#      - traefik.tcp.services.socket-service.loadbalancer.server.port=80
+#    networks:
+#      - redis-network
+#      - socket-network
+#      - global-network
+#    depends_on:
+#      - redis
+
+#  worker_default: &worker-service-template
+#    <<: *main-config-template
+#    container_name: worker-default
+#    build:
+#      context: .
+#      dockerfile: ./docker/worker/Dockerfile
+#    command: php artisan queue:work --daemon --env=production --tries=1 --queue=default
+
+#  worker-socket:
+#    <<: *worker-service-template
+#    container_name: worker-socket
+#    command: php artisan queue:work --daemon --env=production --tries=1 --queue=socket

@@ -1,0 +1,23 @@
+Port 22
+Protocol 2
+ClientAliveInterval 300
+ClientAliveCountMax 3
+PermitRootLogin yes
+PasswordAuthentication no
+PubkeyAuthentication yes
+AuthorizedKeysFile .ssh/authorized_keys
+SyslogFacility AUTHPRIV
+LogLevel DEBUG
+HostKey /etc/ssh/ssh_host_rsa_key
+HostKey /etc/ssh/ssh_host_ecdsa_key
+HostKey /etc/ssh/ssh_host_ed25519_key
+Subsystem       sftp    /usr/libexec/openssh/sftp-server
+ChallengeResponseAuthentication no
+X11Forwarding yes
+PrintMotd no
+Banner none
+AllowUsers root 
+AcceptEnv LANG LC_CTYPE LC_NUMERIC LC_TIME LC_COLLATE LC_MONETARY LC_MESSAGES
+AcceptEnv LC_PAPER LC_NAME LC_ADDRESS LC_TELEPHONE LC_MEASUREMENT
+AcceptEnv LC_IDENTIFICATION LC_ALL LANGUAGE
+AcceptEnv XMODIFIERS

@@ -1,0 +1,29 @@
+## traefik.yml
+
+# Docker configuration backend
+providers:
+  providersThrottleDuration: 2s
+  docker:
+    exposedByDefault: false
+    endpoint: unix:///var/run/docker.sock
+    defaultRule: "Host(`{{ trimPrefix `/` .Name }}.docker.localhost`)"
+
+entryPoints:
+  http:
+    address: ":80"
+  https:
+    address: ":443"
+  ssh:
+    address: ":6060"
+
+
+# API and dashboard configuration
+api:
+  dashboard: true
+  debug: true
+  insecure: true
+
+# Configuring a buffer of 100 lines
+accessLog:
+  filePath: "/logs/access.log"
+  bufferingSize: 100
