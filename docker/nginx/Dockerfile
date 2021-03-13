@@ -1,4 +1,4 @@
-FROM node:13 as front-build
+FROM node:15-alpine as front-build
 
 LABEL MAINTAINER="Edward S edward@gmail.com"
 

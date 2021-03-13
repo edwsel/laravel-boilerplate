@@ -1,4 +1,4 @@
-FROM node:13 as front-build
+FROM node:15-alpine as front-build
 
 LABEL MAINTAINER="Edward S edward@gmail.com"
 
@@ -11,15 +11,15 @@ RUN rm -rf ./node_modules
 
 # -----
 
-FROM php:7.4-fpm-alpine
+FROM php:8.0-fpm-alpine
 
 WORKDIR /app
 
-ENV COMPOSER_VERSION=1.10.10
+ENV COMPOSER_VERSION=2.0.11
 ENV COMPOSER_ALLOW_SUPERUSER 1
 ENV COMPOSER_HOME /tmp
 
-ENV PHP_REDIS_VERSION=5.3.1
+ENV PHP_REDIS_VERSION=5.3.3
 
 RUN set -xe \
     apk update && apk add --no-cache --virtual .persistent-deps --virtual .phpize-deps $PHPIZE_DEPS \
@@ -27,19 +27,20 @@ RUN set -xe \
     imagemagick-dev \
     imagemagick \
     libtool \
-	# for ZIP
-	libzip-dev \
+    # for ZIP
+    libzip-dev \
     # Other
-	&& pecl install imagick-3.4.4 \
-    && docker-php-ext-enable imagick \
-	&& pecl install redis-$PHP_REDIS_VERSION \
+    && mkdir -p /usr/src/php/ext/imagick \
+    && curl -fsSL https://github.com/Imagick/imagick/archive/06116aa24b76edaf6b1693198f79e6c295eda8a9.tar.gz | tar xvz -C "/usr/src/php/ext/imagick" --strip 1 \
+    && docker-php-ext-install imagick \
+    && pecl install redis-$PHP_REDIS_VERSION \
     && echo "extension=redis.so" > /usr/local/etc/php/conf.d/redis.ini \
     && docker-php-ext-enable redis \
-	&& docker-php-ext-configure opcache --enable-opcache \
-	&& docker-php-ext-configure mysqli --with-mysqli \
-	&& docker-php-ext-configure pcntl --enable-pcntl \
+    && docker-php-ext-configure opcache --enable-opcache \
+    && docker-php-ext-configure mysqli --with-mysqli \
+    && docker-php-ext-configure pcntl --enable-pcntl \
     && docker-php-ext-configure pdo_mysql --with-pdo-mysql \
-	&& docker-php-ext-install -j$(nproc) \
+    && docker-php-ext-install -j$(nproc) \
 	mysqli \
 	pdo_mysql \
 	pcntl \
