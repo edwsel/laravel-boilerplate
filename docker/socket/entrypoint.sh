@@ -9,7 +9,7 @@ if [ "$IS_DOCKER_COMPOSE" = false ] ; then
     REDIS_PORT="${REDIS_PORT:-6379}";
     REDIS_PASSWORD="${REDIS_PASSWORD:-}";
     REDIS_KEY_PREFIX="${REDIS_KEY_PREFIX:-}";
-    ALLOW_ORIGIN="${ALLOW_ORIGIN:-http://api.localhost}";
+    ALLOW_ORIGIN="${ALLOW_ORIGIN:-http://api.internal}";
 
     sed -i "s#{{AUTH_HOST}}#${AUTH_HOST}#" "/app/laravel-echo-server.json";
     sed -i "s#{{REDIS_HOST}}#${REDIS_HOST}#" "/app/laravel-echo-server.json";

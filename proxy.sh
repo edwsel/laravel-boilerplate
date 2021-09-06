@@ -37,7 +37,7 @@ yarn() {
 }
 
 db() {
-    command="docker exec -it mariadb /usr/bin/mysql -u root -psecret -b ibolit";
+    command="docker exec -it mariadb /usr/bin/mysql -u root -psecret -b fuzzz";
     echo $command
     eval $command;
 }

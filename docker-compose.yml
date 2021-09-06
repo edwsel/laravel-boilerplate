@@ -7,7 +7,7 @@ x-main-config-template: &main-config-template
   environment:
     - DB_HOST=mariadb
     - DB_PORT=3306
-    - DB_DATABASE=ibolit
+    - DB_DATABASE=fuzzz
     - DB_USERNAME=root
     - DB_PASSWORD=secret
     - REDIS_HOST=redis
@@ -44,7 +44,7 @@ services:
       - traefik.docker.network=global-network
       - traefik.http.routers.api.service=api@internal
       - traefik.http.routers.api.entrypoints=http
-      - traefik.http.routers.api.rule=Host(`traefik.localhost`)
+      - traefik.http.routers.api.rule=Host(`traefik.internal`)
       - traefik.http.services.api.loadbalancer.server.port=8080
     ports:
       - 80:80
@@ -64,7 +64,7 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.network=global-network
-      - traefik.http.routers.mail-hog-router.rule=Host(`mail.localhost`)
+      - traefik.http.routers.mail-hog-router.rule=Host(`mail.internal`)
       - traefik.http.routers.mail-hog-router.entrypoints=http
       - traefik.http.services.mail-hog-service.loadbalancer.server.port=8025
     environment:
@@ -90,7 +90,7 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.network=global-network
-      - traefik.http.routers.redis-router.rule=Host(`redis.localhost`)
+      - traefik.http.routers.redis-router.rule=Host(`redis.internal`)
       - traefik.http.routers.redis-router.entrypoints=http
       - traefik.http.services.redis-service.loadbalancer.server.port=8081
     environment:
@@ -111,7 +111,7 @@ services:
     volumes:
       - mariadb-data:/var/lib/mysql
     environment:
-     - MYSQL_DATABASE=ibolit
+     - MYSQL_DATABASE=fuzzz
      - MYSQL_ROOT_PASSWORD=secret
     ports:
       - 3306:3306
@@ -155,12 +155,12 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.network=global-network
-      - traefik.http.routers.api-router.rule=Host(`api.localhost`)
+      - traefik.http.routers.api-router.rule=Host(`api.internal`)
       - traefik.http.routers.api-router.entrypoints=http
       - traefik.http.routers.api-router.service=api-service
       - traefik.http.services.api-service.loadbalancer.server.port=80
     environment:
-      - APP_HOST=api.localhost
+      - APP_HOST=api.internal
       - FPM_PORT=9000
       - FPM_HOST=fpm
       - ROOT_DIR=/app/public
@@ -198,11 +198,11 @@ services:
 #    labels:
 #      - traefik.enable=true
 #      - traefik.docker.network=global-network
-#      - traefik.http.routers.socket-router.rule=Host(`socket.localhost`)
+#      - traefik.http.routers.socket-router.rule=Host(`socket.internal`)
 #      - traefik.http.routers.socket-router.entrypoints=http
 #      - traefik.http.routers.socket-router.service=socket-service
 #      - traefik.http.services.socket-service.loadbalancer.server.port=80
-#      - traefik.tcp.routers.socket-router.rule=HostSNI(`socket.localhost`)
+#      - traefik.tcp.routers.socket-router.rule=HostSNI(`socket.internal`)
 #      - traefik.tcp.routers.socket-router.entrypoints=http
 #      - traefik.tcp.routers.socket-router.service=socket-service
 #      - traefik.tcp.services.socket-service.loadbalancer.server.port=80

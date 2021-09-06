@@ -6,7 +6,7 @@ providers:
   docker:
     exposedByDefault: false
     endpoint: unix:///var/run/docker.sock
-    defaultRule: "Host(`{{ trimPrefix `/` .Name }}.docker.localhost`)"
+    defaultRule: "Host(`{{ trimPrefix `/` .Name }}.docker.internal`)"
 
 entryPoints:
   http:
